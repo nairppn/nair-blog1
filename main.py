@@ -13,19 +13,21 @@ from functools import wraps
 from sqlalchemy import Table, Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 Bootstrap(app)
 ckeditor = CKEditor(app)
-gravatar = Gravatar(app, size=100, rating='g', default='retro', force_default=False, force_lower=False, use_ssl=False, base_url=None)
-
+gravatar = Gravatar(app, size=100, rating='g', default='retro', force_default=False, force_lower=False, use_ssl=False,
+                    base_url=None)
 
 ##CONNECT TO DB
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
+db = SQLAlchemy(app)
+migrate = Migrate(app=app,db=db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -33,7 +35,7 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User,int(user_id))
+    return db.session.get(User, int(user_id))
     # return User.query.get(int(user_id))
 
 
@@ -147,10 +149,10 @@ def logout():
     return redirect(url_for('get_all_posts'))
 
 
-@app.route("/show_post/<int:post_id>",methods=["POST","GET"])
+@app.route("/show_post/<int:post_id>", methods=["POST", "GET"])
 def show_post(post_id):
     # requested_post = BlogPost.query.get(post_id)
-    requested_post=db.session.get(BlogPost,post_id)
+    requested_post = db.session.get(BlogPost, post_id)
     form = CommentForm()
     if form.validate_on_submit:
         if not current_user.is_authenticated:
@@ -158,13 +160,13 @@ def show_post(post_id):
             return redirect(url_for('login'))
 
         new_comment = Comment(text=form.comment.data,
-                            comment_author=current_user,
-                                parent_post=requested_post)
+                              comment_author=current_user,
+                              parent_post=requested_post)
         # with app.app_context():
         db.session.add(new_comment)
         db.session.commit()
 
-    return render_template("post.html", post=requested_post,form=form,current_user=current_user)
+    return render_template("post.html", post=requested_post, form=form, current_user=current_user)
 
 
 @app.route("/about")
